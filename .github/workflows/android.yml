@@ -1,7 +1,6 @@
-# This name is more descriptive for a Continuous Integration workflow for an Android project.
-name: Android CI
+# A clear, descriptive name for the workflow
+name: Android Build & Test
 
-# This block defines the triggers for the workflow. It's the same as your original.
 on:
   push:
     branches: [ "master" ]
@@ -9,41 +8,34 @@ on:
     branches: [ "master" ]
 
 jobs:
-  # A single job in this workflow, named 'build'.
   build:
-
-    # The type of virtual machine to run the job on. 'ubuntu-latest' is a great default.
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository's code. This step was missing and is essential.
-      # The workflow needs access to your code to run gradlew.
-      - name: Checkout code
+      # STEP 1: Check out your repository's code. This MUST come first.
+      # The runner now has access to your files, including your gradlew script.
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up the Java environment required for Android builds.
+      # STEP 2: Set up the Java environment.
+      # Now that the files are checked out, it can find them for caching.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'gradle'
-          # The cache-dependency-path is optional but helps speed up builds
-          # by caching the Gradle wrapper and dependencies.
-          # Your original path was kept, but a more common setup might be:
-          # cache-dependency-path: |
-          #  **/*.gradle*
-          #  gradle-wrapper.properties
+          # This is a more robust path for caching in most Android projects.
+          # It looks for .gradle files in all subdirectories and the wrapper properties.
           cache-dependency-path: |
-            sub-project/*.gradle*
-            sub-project/**/gradle-wrapper.properties
+            **/*.gradle*
+            gradle/wrapper/gradle-wrapper.properties
 
-      # Step 3: Grant execute permissions to the Gradle wrapper script.
-      # This is often necessary as git might not preserve file permissions.
+      # STEP 3: Grant execute permissions to the Gradle wrapper.
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Step 4: Run the build command using the Gradle wrapper.
+      # STEP 4: Run the build.
       - name: Build with Gradle
-        run: ./gradlew build
-
+        # It's good practice to use --no-daemon on CI servers.
+        run: ./gradlew build --no-daemon
